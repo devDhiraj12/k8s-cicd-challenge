@@ -18,7 +18,7 @@ app.get('/', async (req, res) => {
   try {
     const result = await pool.query('SELECT NOW() as db_time');
     res.json({
-      message: 'Hello from Dhiraj'; 
+      message: 'Hello from Dhiraj', 
       pod: process.env.HOSTNAME,
       db_time: result.rows[0].db_time,
     });
