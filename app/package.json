@@ -1,0 +1,13 @@
+{
+  "name": "k8s-demo-api",
+  "version": "1.0.0",
+  "description": "Minimal API for DevOps K8s challenge",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "pg": "^8.12.0"
+  }
+}

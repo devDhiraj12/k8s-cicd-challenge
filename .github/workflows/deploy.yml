@@ -1,0 +1,49 @@
+name: Build and Deploy to Kubernetes
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t k8s-demo-api:${{ github.sha }} -t k8s-demo-api:latest ./app
+
+      - name: Create Kind cluster
+        uses: helm/kind-action@v1
+        with:
+          cluster_name: ci-cluster
+
+      - name: Load image into Kind
+        run: kind load docker-image k8s-demo-api:latest --name ci-cluster
+
+      - name: Deploy to Kubernetes
+        run: |
+          kubectl apply -f k8s/postgres.yaml
+          kubectl apply -f k8s/backend.yaml
+
+      - name: Wait for rollout
+        run: |
+          kubectl rollout status deployment/postgres --timeout=120s
+          kubectl rollout status deployment/backend --timeout=120s
+
+      - name: Smoke test
+        run: |
+          kubectl port-forward svc/backend 8080:80 &
+          sleep 5
+          curl -sf http://localhost:8080/ | tee response.json
+          curl -sf http://localhost:8080/readyz
+          echo "Smoke test passed"
+
+      - name: Debug info on failure
+        if: failure()
+        run: |
+          kubectl get pods -o wide
+          kubectl describe pods
+          kubectl logs -l app=backend --tail=50 || true
